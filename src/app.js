@@ -29,6 +29,10 @@ app.use(express.static("public"));
 
 app.use(cookieParser());
 
+app.get("/", (req, res) => {
+  res.send("Server is running.");
+});
+
 app.use("/api/v1/volunteer", volunteerRouter);
 
 export { app };
