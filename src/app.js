@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { volunteerRouter } from "./routes/volunteer.route.js";
+import errorHandler from "./middleware/error.middleware.js";
 
 const app = express();
 
@@ -34,5 +35,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/v1/volunteer", volunteerRouter);
+
+app.use(errorHandler);
 
 export { app };
