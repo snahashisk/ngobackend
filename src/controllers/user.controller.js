@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
-import { Volunteer } from "../models/volunteer.model.js";
+import { User } from "../models/user.model.js";
 import { generateOTP } from "../utils/generateOtp.js";
 import bcrypt from "bcrypt";
 
@@ -19,7 +19,7 @@ const generateAccessAndRefreshToken = async (user) => {
   }
 };
 
-const registerVolunteer = asyncHandler(async (req, res) => {
+const registerUser = asyncHandler(async (req, res) => {
   const {
     fullName,
     email,
@@ -59,16 +59,16 @@ const registerVolunteer = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
-  const existingVolunteer = await Volunteer.findOne({ email });
-  if (existingVolunteer) {
-    throw new ApiError(400, "Volunteer already exists");
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    throw new ApiError(400, "User already exists");
   }
   const otp = generateOTP();
   const otpExpiry = Date.now() + 10 * 60 * 1000; //10 minutes
   const hashedOtp = await bcrypt.hash(otp, 10);
 
   try {
-    const volunteer = await Volunteer.create({
+    const user = await User.create({
       fullName,
       email,
       password,
@@ -91,41 +91,41 @@ const registerVolunteer = asyncHandler(async (req, res) => {
     });
     console.log("OTP:", otp);
 
-    const createdVolunteer = await Volunteer.findById(volunteer._id).select("-password -refreshToken -otp -otpExpiry");
+    const createdUser = await User.findById(user._id).select("-password -refreshToken -otp -otpExpiry");
 
     return res
       .status(201)
-      .json(new ApiResponse(200, createdVolunteer, "Volunteer registered successfully. OTP sent successfully."));
+      .json(new ApiResponse(200, createdUser, "User registered successfully. OTP sent successfully."));
   } catch (error) {
-    throw new ApiError(500, "Failed to register volunteer");
+    throw new ApiError(500, "Failed to register User");
   }
 });
 
-const verifyVolunteer = asyncHandler(async (req, res) => {
+const verifyUser = asyncHandler(async (req, res) => {
   const { email, otp } = req.body;
   if (!email || !otp) {
     throw new ApiError(400, "Email and OTP are required");
   }
-  const volunteer = await Volunteer.findOne({ email });
-  if (!volunteer) {
-    throw new ApiError(404, "Volunteer not found");
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new ApiError(404, "User not found");
   }
-  if (volunteer.isVerified) {
-    throw new ApiError(400, "Volunteer already verified");
+  if (user.isVerified) {
+    throw new ApiError(400, "User already verified");
   }
-  if (volunteer.otpExpiry < Date.now()) {
+  if (user.otpExpiry < Date.now()) {
     throw new ApiError(400, "OTP expired");
   }
-  const isOtpValid = await bcrypt.compare(otp, volunteer.otp);
+  const isOtpValid = await bcrypt.compare(otp, user.otp);
   if (!isOtpValid) {
     throw new ApiError(400, "Invalid OTP");
   }
-  volunteer.isVerified = true;
-  volunteer.otp = undefined;
-  volunteer.otpExpiry = undefined;
-  await volunteer.save({ validateBeforeSave: false });
-  const verifiedVolunteer = await Volunteer.findById(volunteer._id).select("-password -refreshToken -otp -otpExpiry");
-  return res.status(200).json(new ApiResponse(200, verifiedVolunteer, "Volunteer verified successfully"));
+  user.isVerified = true;
+  user.otp = undefined;
+  user.otpExpiry = undefined;
+  await user.save({ validateBeforeSave: false });
+  const verifiedUser = await User.findById(user._id).select("-password -refreshToken -otp -otpExpiry");
+  return res.status(200).json(new ApiResponse(200, verifiedUser, "User verified successfully"));
 });
 
 const resendOtp = asyncHandler(async (req, res) => {
@@ -133,29 +133,29 @@ const resendOtp = asyncHandler(async (req, res) => {
   if (!email) {
     throw new ApiError(400, "Email is required");
   }
-  const volunteer = await Volunteer.findOne({ email });
-  if (!volunteer) {
-    throw new ApiError(404, "Volunteer not found");
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new ApiError(404, "User not found");
   }
-  if (volunteer.isVerified) {
-    throw new ApiError(400, "Volunteer already verified");
+  if (user.isVerified) {
+    throw new ApiError(400, "User already verified");
   }
 
   //check if the otp is not expired
-  if (volunteer.otpExpiry > Date.now()) {
+  if (user.otpExpiry > Date.now()) {
     throw new ApiError(400, "Please wait for 10 minutes before resending OTP");
   }
 
   const otp = generateOTP();
   const otpExpiry = Date.now() + 10 * 60 * 1000; //10 minutes
   const hashedOtp = await bcrypt.hash(otp, 10);
-  volunteer.otp = hashedOtp;
-  volunteer.otpExpiry = otpExpiry;
-  await volunteer.save();
+  user.otp = hashedOtp;
+  user.otpExpiry = otpExpiry;
+  await user.save();
 
-  const resendOtpVolunteer = await Volunteer.findById(volunteer._id).select("-password -refreshToken -otp -otpExpiry");
+  const resendOtpUser = await User.findById(user._id).select("-password -refreshToken -otp -otpExpiry");
   console.log("OTP:", otp);
-  return res.status(200).json(new ApiResponse(200, resendOtpVolunteer, "OTP resent successfully"));
+  return res.status(200).json(new ApiResponse(200, resendOtpUser, "OTP resent successfully"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -165,7 +165,7 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
-  const user = await Volunteer.findOne({ email });
+  const user = await User.findOne({ email });
 
   if (!user) {
     throw new ApiError(404, "User not found");
@@ -183,7 +183,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user);
 
-  const loggedInUser = await Volunteer.findById(user._id).select("-password -refreshToken -otp -otpExpiry");
+  const loggedInUser = await User.findById(user._id).select("-password -refreshToken -otp -otpExpiry");
 
   const options = {
     httpOnly: true,
@@ -199,7 +199,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const logoutUser = asyncHandler(async (req, res) => {
   const { _id } = req.user;
-  await Volunteer.findByIdAndUpdate(
+  await User.findByIdAndUpdate(
     _id,
     {
       $unset: {
@@ -225,4 +225,4 @@ const getCurrentUser = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, req.user, "User fetched successfully"));
 });
 
-export { registerVolunteer, verifyVolunteer, resendOtp, loginUser, logoutUser, getCurrentUser };
+export { registerUser, verifyUser, resendOtp, loginUser, logoutUser, getCurrentUser };

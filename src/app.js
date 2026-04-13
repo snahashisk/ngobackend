@@ -1,8 +1,9 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { volunteerRouter } from "./routes/volunteer.route.js";
+import { UserRouter } from "./routes/user.route.js";
 import errorHandler from "./middleware/error.middleware.js";
+import { reportRouter } from "./routes/report.route.js";
 
 const app = express();
 
@@ -34,8 +35,10 @@ app.get("/", (req, res) => {
   res.send("Server is running.");
 });
 
-app.use("/api/v1/volunteer", volunteerRouter);
+app.use("/api/v1/user", UserRouter);
 
-app.use(errorHandler);
+app.use("/api/v1/report", reportRouter);
+
+// app.use(errorHandler);
 
 export { app };

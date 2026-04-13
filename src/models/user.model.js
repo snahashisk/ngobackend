@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { PREFERRED_CAUSES, CONTRIBUTION_AREAS, DAYS, TIME_SLOTS } from "../../constant.js";
 
-const volunteerSchema = new Schema(
+const UserSchema = new Schema(
   {
     fullName: {
       type: String,
@@ -120,18 +120,18 @@ const volunteerSchema = new Schema(
   { timestamps: true },
 );
 
-volunteerSchema.pre("save", async function () {
+UserSchema.pre("save", async function () {
   if (!this.isModified("password")) {
     return;
   }
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-volunteerSchema.methods.isPasswordCorrect = async function (password) {
+UserSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-volunteerSchema.methods.generateAccessToken = function () {
+UserSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
       _id: this._id,
@@ -146,7 +146,7 @@ volunteerSchema.methods.generateAccessToken = function () {
   );
 };
 
-volunteerSchema.methods.generateRefreshToken = function () {
+UserSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     {
       _id: this._id,
@@ -158,9 +158,9 @@ volunteerSchema.methods.generateRefreshToken = function () {
   );
 };
 
-export const Volunteer = mongoose.model("Volunteer", volunteerSchema);
+export const User = mongoose.models.User || mongoose.model("User", UserSchema);
 
-//demo json body for volunteerSchema
+//demo json body for UserSchema
 /*
 {
   "fullName": "John Doe",
