@@ -3,6 +3,7 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { User } from "../models/user.model.js";
 import { generateOTP } from "../utils/generateOtp.js";
+import { sendEmail } from "../utils/sendEmail.js";
 import bcrypt from "bcrypt";
 
 const generateAccessAndRefreshToken = async (user) => {
@@ -92,6 +93,9 @@ const registerUser = asyncHandler(async (req, res) => {
     console.log("OTP:", otp);
 
     const createdUser = await User.findById(user._id).select("-password -refreshToken -otp -otpExpiry");
+
+    //send email to the user
+    await sendEmail({ to: email, subject: "OTP for verification", html: `<h1>Your OTP is ${otp}</h1>` });
 
     return res
       .status(201)
