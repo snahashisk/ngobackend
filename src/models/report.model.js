@@ -1,13 +1,18 @@
 import mongoose, { Schema } from "mongoose";
 
 const REPORT_CATEGORIES = [
-  "foodShortage",
-  "medicalEmergency",
-  "naturalDisaster",
-  "shelterNeed",
-  "waterShortage",
-  "animalRescue",
-  "other",
+  "Food Shortage",
+  "Water Crisis",
+  "Medical Emergency",
+  "Shelter Needed",
+  "Disaster Relief",
+  "Education Support",
+  "Sanitation Issue",
+  "Women & Child Safety",
+  "Elderly Support",
+  "Animal Welfare",
+  "Environmental Issue",
+  "Other",
 ];
 
 const reportSchema = new Schema(
@@ -35,9 +40,36 @@ const reportSchema = new Schema(
       maxLength: [1000, "Description must be at most 1000 characters long"],
       trim: true,
     },
+    affectedPeople: {
+      type: Number,
+      required: [true, "Number of affected people is required"],
+    },
+    stepsToResolve: {
+      type: String,
+      trim: true,
+    },
+    imageOfReport: {
+      type: String,
+      required: [true, "Image of report is required"],
+    },
+    urgencyLevel: {
+      type: String,
+      enum: ["Low", "Medium", "High", "Critical"],
+      default: "Low",
+    },
+    landmark: {
+      type: String,
+      trim: true,
+      required: [true, "Landmark is required"],
+    },
     address: {
       type: String,
       required: [true, "Address is required"],
+      trim: true,
+    },
+    locality: {
+      type: String,
+      required: [true, "Locality is required"],
       trim: true,
     },
     city: {
@@ -56,15 +88,10 @@ const reportSchema = new Schema(
       type: String,
       required: true,
     },
-    images: {
-      type: [String],
-      default: [],
-      required: [true, "Images are required"],
-    },
     status: {
       type: String,
-      enum: ["pending", "verified", "inProgress", "resolved", "rejected"],
-      default: "pending",
+      enum: ["Pending", "Verified", "In Progress", "Resolved", "Rejected"],
+      default: "Pending",
       index: true,
     },
     positiveVerification: {
@@ -85,31 +112,16 @@ const reportSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    resolvedAt: {
-      type: Date,
+    captain: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
-    responseTeam: {
-      captain: {
-        type: Schema.Types.ObjectId,
+    assignedMembers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
         ref: "User",
       },
-      members: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-      ],
-    },
-    resolutionDetails: {
-      summary: {
-        type: String,
-        trim: true,
-      },
-      resolutionImages: {
-        type: [String],
-        default: [],
-      },
-    },
+    ],
   },
   { timestamps: true },
 );

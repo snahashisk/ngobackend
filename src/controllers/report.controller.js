@@ -4,11 +4,41 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { Report } from "../models/report.model.js";
 import { User } from "../models/user.model.js";
 import { sendEmail } from "../utils/sendEmail.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 
 const createReport = asyncHandler(async (req, res) => {
-  const { title, description, category, address, city, state, pinCode, country, images } = req.body;
-  if (!title || !description || !category || !address || !city || !state || !pinCode || !country || !images) {
+  console.log("BODY:", req.body);
+  const {
+    title,
+    category,
+    description,
+    affectedPeople,
+    stepsToResolve,
+    urgencyLevel,
+    landmark,
+    address,
+    locality,
+    city,
+    state,
+    pinCode,
+    country,
+  } = req.body;
+  if (
+    !title ||
+    !description ||
+    !category ||
+    !affectedPeople ||
+    !stepsToResolve ||
+    !urgencyLevel ||
+    !landmark ||
+    !address ||
+    !locality ||
+    !city ||
+    !state ||
+    !pinCode ||
+    !country
+  ) {
     throw new ApiError(400, "All fields are required");
   }
 
@@ -17,25 +47,45 @@ const createReport = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
+  let imageOfReportLocalPath = "";
+
+  if (req.file) {
+    imageOfReportLocalPath = req.file.path;
+  }
+
+  if (!imageOfReportLocalPath) {
+    throw new ApiError(400, "Image file is required");
+  }
+
   try {
+    const imageOfReport = await uploadOnCloudinary(imageOfReportLocalPath);
+    
+    if (!imageOfReport) {
+      throw new ApiError(500, "Failed to upload image to Cloudinary");
+    }
+
     const report = await Report.create({
       title,
       description,
       category,
+      landmark,
       address,
+      locality,
       city,
       state,
       pinCode,
       country,
-      images,
+      imageOfReport: imageOfReport.url,
+      urgencyLevel,
+      affectedPeople,
+      stepsToResolve,
       reportedBy: req.user._id,
-      status: "pending",
+      status: "Pending",
     });
 
     res.status(201).json(new ApiResponse(201, report, "Report created successfully"));
 
     setImmediate(async () => {
-      
       try {
         const volunteers = await User.find({
           isVerified: true,
@@ -86,11 +136,7 @@ const createReport = asyncHandler(async (req, res) => {
         console.error("Send Email Error:", error);
       }
     });
-
-    //send email to all to help resolve the problem after 1 min of report submission
-    setTimeout(() => {
-
-    }, 5 * 60 * 1000);
+    setTimeout(() => {}, 5 * 60 * 1000);
   } catch (error) {
     console.error("Create Report Error:", error);
     throw new ApiError(500, error?.message || "Failed to create report");

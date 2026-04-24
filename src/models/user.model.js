@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { PREFERRED_CAUSES, CONTRIBUTION_AREAS, DAYS, TIME_SLOTS } from "../../constant.js";
+import { CONTRIBUTION_AREAS } from "../../constant.js";
 
 const UserSchema = new Schema(
   {
@@ -29,9 +29,24 @@ const UserSchema = new Schema(
       max: [15, "Phone number must be at most 15 digits long"],
       trim: true,
     },
+    age: {
+      type: Number,
+      required: [true, "Age is required"],
+      trim: true,
+    },
+    gender: {
+      type: String,
+      required: [true, "Gender is required"],
+      trim: true,
+    },
     address: {
       type: String,
       required: [true, "Address is required"],
+      trim: true,
+    },
+    state: {
+      type: String,
+      required: [true, "State is required"],
       trim: true,
     },
     city: {
@@ -39,9 +54,9 @@ const UserSchema = new Schema(
       required: [true, "City is required"],
       trim: true,
     },
-    state: {
+    locality: {
       type: String,
-      required: [true, "State is required"],
+      required: [true, "Locality is required"],
       trim: true,
     },
     zipCode: {
@@ -54,35 +69,14 @@ const UserSchema = new Schema(
       required: [true, "Country is required"],
       trim: true,
     },
-    avatar: {
+    education: {
       type: String,
-      required: [true, "Avatar is required"],
+      required: [true, "Education is required"],
       trim: true,
     },
-    age: {
-      type: Number,
-      required: [true, "Age is required"],
-      trim: true,
-    },
-    gender: {
+    profession: {
       type: String,
-      required: [true, "Gender is required"],
-      trim: true,
-    },
-    idProof: {
-      type: String,
-      required: [true, "ID proof is required"],
-      trim: true,
-    },
-    status: {
-      type: String,
-      enum: ["active", "inactive", "suspended"],
-      default: "active",
-    },
-    preferredCauses: {
-      type: [String],
-      enum: PREFERRED_CAUSES,
-      required: [true, "Preferred causes are required"],
+      required: [true, "Profession is required"],
       trim: true,
     },
     contributionAreas: {
@@ -91,17 +85,20 @@ const UserSchema = new Schema(
       required: [true, "Contribution areas are required"],
       trim: true,
     },
-    availability: {
-      days: {
-        type: [String],
-        enum: DAYS,
-        required: true,
-      },
-      timeSlots: {
-        type: [String],
-        enum: TIME_SLOTS,
-        required: true,
-      },
+    idProof: {
+      type: String,
+      required: [true, "ID proof is required"],
+      trim: true,
+    },
+    avatar: {
+      type: String,
+      required: [true, "Avatar is required"],
+      trim: true,
+    },
+    status: {
+      type: String,
+      enum: ["active", "inactive", "suspended"],
+      default: "active",
     },
     refreshToken: {
       type: String,

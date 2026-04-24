@@ -5,6 +5,7 @@ import { User } from "../models/user.model.js";
 import { generateOTP } from "../utils/generateOtp.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import bcrypt from "bcrypt";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const generateAccessAndRefreshToken = async (user) => {
   try {
@@ -28,42 +29,71 @@ const registerUser = asyncHandler(async (req, res) => {
     phoneNumber,
     address,
     city,
+    locality,
     state,
     zipCode,
     country,
-    avatar,
     age,
     gender,
-    idProof,
-    preferredCauses,
+    education,
+    profession,
     contributionAreas,
-    availability,
   } = req.body;
+
+  let avatarLocalPath;
+  if (req.files && Array.isArray(req.files.avatar) && req.files.avatar.length > 0) {
+    avatarLocalPath = req.files.avatar[0].path;
+  }
+
+  let idProofLocalPath;
+  if (req.files && Array.isArray(req.files.idProof) && req.files.idProof.length > 0) {
+    idProofLocalPath = req.files.idProof[0].path;
+  }
+
   if (
     !fullName ||
     !email ||
     !password ||
     !phoneNumber ||
-    !address ||
-    !city ||
-    !state ||
-    !zipCode ||
-    !country ||
-    !avatar ||
     !age ||
     !gender ||
-    !idProof ||
-    !preferredCauses ||
-    !contributionAreas ||
-    !availability
+    !address ||
+    !state ||
+    !city ||
+    !locality ||
+    !zipCode ||
+    !country ||
+    !education ||
+    !profession ||
+    !contributionAreas
   ) {
-    throw new ApiError(400, "All fields are required");
+    throw new ApiError(401, "All fields are required");
+  }
+
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file is required");
+  }
+
+  if (!idProofLocalPath) {
+    throw new ApiError(400, "ID proof file is required");
   }
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     throw new ApiError(400, "User already exists");
   }
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  const idProof = await uploadOnCloudinary(idProofLocalPath);
+
+  if (!avatar) {
+    throw new ApiError(500, "Failed to upload avatar");
+  }
+
+  if (!idProof) {
+    throw new ApiError(500, "Failed to upload ID proof");
+  }
+
   const otp = generateOTP();
   const otpExpiry = Date.now() + 10 * 60 * 1000; //10 minutes
   const hashedOtp = await bcrypt.hash(otp, 10);
@@ -75,20 +105,20 @@ const registerUser = asyncHandler(async (req, res) => {
       password,
       phoneNumber,
       address,
+      locality,
       city,
       state,
       zipCode,
       country,
-      avatar,
       age,
       gender,
-      idProof,
-      preferredCauses,
+      education,
+      profession,
       contributionAreas,
-      availability,
+      avatar: avatar.url,
+      idProof: idProof.url,
       otp: hashedOtp,
       otpExpiry,
-      isVerified: false,
     });
     console.log("OTP:", otp);
 
@@ -101,16 +131,17 @@ const registerUser = asyncHandler(async (req, res) => {
       .status(201)
       .json(new ApiResponse(200, createdUser, "User registered successfully. OTP sent successfully."));
   } catch (error) {
-    throw new ApiError(500, "Failed to register User");
+    console.error("REGISTER ERROR:", error); // 🔥 ADD THIS
+    throw new ApiError(500, error.message || "Failed to register User");
   }
 });
 
 const verifyUser = asyncHandler(async (req, res) => {
-  const { email, otp } = req.body;
-  if (!email || !otp) {
-    throw new ApiError(400, "Email and OTP are required");
+  const { userId, otp } = req.body;
+  if (!userId || !otp) {
+    throw new ApiError(400, "userId and OTP are required");
   }
-  const user = await User.findOne({ email });
+  const user = await User.findById(userId);
   if (!user) {
     throw new ApiError(404, "User not found");
   }
@@ -133,11 +164,11 @@ const verifyUser = asyncHandler(async (req, res) => {
 });
 
 const resendOtp = asyncHandler(async (req, res) => {
-  const { email } = req.body;
-  if (!email) {
-    throw new ApiError(400, "Email is required");
+  const { userId } = req.body;
+  if (!userId) {
+    throw new ApiError(400, "userId is required");
   }
-  const user = await User.findOne({ email });
+  const user = await User.findById(userId);
   if (!user) {
     throw new ApiError(404, "User not found");
   }
@@ -191,7 +222,8 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
   };
 
   return res
@@ -215,7 +247,8 @@ const logoutUser = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
   };
 
   return res
