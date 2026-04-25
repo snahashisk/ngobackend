@@ -39,6 +39,6 @@ app.use("/api/v1/user", UserRouter);
 
 app.use("/api/v1/report", reportRouter);
 
-// app.use(errorHandler);
+app.use(errorHandler);
 
 export { app };

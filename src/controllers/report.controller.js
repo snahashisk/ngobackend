@@ -9,6 +9,8 @@ import jwt from "jsonwebtoken";
 
 const createReport = asyncHandler(async (req, res) => {
   const {
+    reporterName,
+    reporterEmail,
     title,
     category,
     description,
@@ -24,6 +26,8 @@ const createReport = asyncHandler(async (req, res) => {
     country,
   } = req.body;
   if (
+    !reporterName ||
+    !reporterEmail ||
     !title ||
     !description ||
     !category ||
@@ -71,6 +75,8 @@ const createReport = asyncHandler(async (req, res) => {
     console.log(cityVolunteers);
 
     const report = await Report.create({
+      reporterName,
+      reporterEmail,
       title,
       description,
       category,
@@ -239,4 +245,33 @@ const voteFromEmail = asyncHandler(async (req, res) => {
   }
 });
 
-export { createReport, getAllReports, getReportById, voteFromEmail };
+const addVote = asyncHandler(async (req, res) => {
+  const { reportId, type } = req.body;
+  const user = req.user;
+  const report = await Report.findById(reportId);
+  if (!report) {
+    throw new ApiError(404, "Report not found");
+  }
+
+  //check if the user has already voted
+  const alreadyVoted = report.verifiedBy.some((id) => id.toString() === user._id.toString());
+  if (alreadyVoted) {
+    throw new ApiError(400, "You have already voted for this report.");
+  }
+
+  try {
+    if (type === "positive") {
+      report.positiveVerification += 1;
+    } else {
+      report.negativeVerification += 1;
+    }
+    report.verifiedBy.push(user._id);
+    await report.save();
+    return res.status(200).json(new ApiResponse(200, report, "Vote added successfully"));
+  } catch (error) {
+    console.error("Failed to add vote.", error);
+    throw new ApiError(500, error?.message || "Failed to add vote");
+  }
+});
+
+export { createReport, getAllReports, getReportById, voteFromEmail, addVote };

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createReport, getAllReports, getReportById, voteFromEmail } from "../controllers/report.controller.js";
+import { createReport, getAllReports, getReportById, addVote } from "../controllers/report.controller.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 import { upload } from "../middleware/multer.middleware.js";
 import { aiReportAnalysisMiddleware } from "../middleware/gemini,middleware.js";
@@ -12,6 +12,6 @@ reportRouter.route("/reports").get(verifyJWT, getAllReports);
 
 reportRouter.route("/reports/:id").get(verifyJWT, getReportById);
 
-reportRouter.route("/vote").get(voteFromEmail);
+reportRouter.route("/vote").post(verifyJWT, addVote);
 
 export { reportRouter };

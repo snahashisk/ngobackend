@@ -67,7 +67,7 @@ const registerUser = asyncHandler(async (req, res) => {
     !profession ||
     !contributionAreas
   ) {
-    throw new ApiError(401, "All fields are required");
+    throw new ApiError(401, "All fields are required!");
   }
 
   if (!avatarLocalPath) {

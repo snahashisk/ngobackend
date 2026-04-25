@@ -22,6 +22,16 @@ const reportSchema = new Schema(
       ref: "User",
       required: [true, "Reported by is required"],
     },
+    reporterName: {
+      type: String,
+      required: [true, "Reporter name is required"],
+      trim: true,
+    },
+    reporterEmail: {
+      type: String,
+      required: [true, "Reporter email is required"],
+      trim: true,
+    },
     title: {
       type: String,
       required: [true, "Title is required"],
