@@ -8,7 +8,6 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 
 const createReport = asyncHandler(async (req, res) => {
-  console.log("BODY:", req.body);
   const {
     title,
     category,
@@ -59,10 +58,17 @@ const createReport = asyncHandler(async (req, res) => {
 
   try {
     const imageOfReport = await uploadOnCloudinary(imageOfReportLocalPath);
-    
+
     if (!imageOfReport) {
       throw new ApiError(500, "Failed to upload image to Cloudinary");
     }
+
+    //find all the users with same city
+    const cityVolunteers = await User.find({
+      city: city,
+      isVerified: true,
+    });
+    console.log(cityVolunteers);
 
     const report = await Report.create({
       title,
