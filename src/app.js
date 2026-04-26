@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import { UserRouter } from "./routes/user.route.js";
 import errorHandler from "./middleware/error.middleware.js";
 import { reportRouter } from "./routes/report.route.js";
+import { finalReportRouter } from "./routes/finalReport.route.js";
 
 const app = express();
 
@@ -38,6 +39,8 @@ app.get("/", (req, res) => {
 app.use("/api/v1/user", UserRouter);
 
 app.use("/api/v1/report", reportRouter);
+
+app.use("/api/v1/finalreport", finalReportRouter);
 
 app.use(errorHandler);
 

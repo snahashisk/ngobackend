@@ -100,7 +100,7 @@ const reportSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["Pending", "Verified", "In Progress", "Resolved", "Rejected"],
+      enum: ["Pending", "Verified", "InProgress", "Resolved", "Rejected"],
       default: "Pending",
       index: true,
     },

@@ -165,6 +165,16 @@ const getAllReports = asyncHandler(async (req, res) => {
   }
 });
 
+const getSixMostRecentReports = asyncHandler(async (req, res) => {
+  try {
+    const reports = await Report.find().sort({ createdAt: -1 }).limit(6);
+    return res.status(200).json(new ApiResponse(200, reports, "Reports fetched successfully"));
+  } catch (error) {
+    console.error("Get Six Most Recent Reports Error:", error);
+    throw new ApiError(500, error?.message || "Failed to get reports");
+  }
+});
+
 const getReportById = asyncHandler(async (req, res) => {
   try {
     const report = await Report.findById(req.params.id);
@@ -267,11 +277,50 @@ const addVote = asyncHandler(async (req, res) => {
     }
     report.verifiedBy.push(user._id);
     await report.save();
-    return res.status(200).json(new ApiResponse(200, report, "Vote added successfully"));
+
+    const updateReport = await Report.findById(reportId);
+
+    if (updateReport.positiveVerification >= 5) {
+      updateReport.status = "Verified";
+      updateReport.isVerified = true;
+      await updateReport.save();
+      console.log("Report Verified Successfully");
+    } else if (
+      updateReport.negativeVerification >= 5 &&
+      updateReport.positiveVerification < updateReport.negativeVerification
+    ) {
+      updateReport.status = "Rejected";
+      await updateReport.save();
+      console.log("Report Rejected Successfully");
+    }
+
+    return res.status(200).json(new ApiResponse(200, updateReport, "Vote added successfully"));
   } catch (error) {
     console.error("Failed to add vote.", error);
     throw new ApiError(500, error?.message || "Failed to add vote");
   }
 });
 
-export { createReport, getAllReports, getReportById, voteFromEmail, addVote };
+const joinReport = asyncHandler(async (req, res) => {
+  try {
+    const { reportId } = req.body;
+    const user = req.user;
+    const report = await Report.findById(reportId);
+    if (!report) {
+      throw new ApiError(404, "Report not found");
+    }
+    //add user to assigned members if he is not already assigned
+    if (report.assignedMembers.includes(user._id)) {
+      throw new ApiError(400, "You are already assigned to this report.");
+    }
+    report.status = "InProgress";
+    report.assignedMembers.push(user._id);
+    await report.save();
+    return res.status(200).json(new ApiResponse(200, report, "Report joined successfully."));
+  } catch (error) {
+    console.error("Failed to join report.", error);
+    throw new ApiError(500, error?.message || "Failed to join report");
+  }
+});
+
+export { createReport, getAllReports, getReportById, voteFromEmail, addVote, joinReport, getSixMostRecentReports };
