@@ -5,6 +5,7 @@ import { UserRouter } from "./routes/user.route.js";
 import errorHandler from "./middleware/error.middleware.js";
 import { reportRouter } from "./routes/report.route.js";
 import { finalReportRouter } from "./routes/finalReport.route.js";
+import { messageRouter } from "./routes/message.route.js";
 
 const app = express();
 
@@ -41,6 +42,8 @@ app.use("/api/v1/user", UserRouter);
 app.use("/api/v1/report", reportRouter);
 
 app.use("/api/v1/finalreport", finalReportRouter);
+
+app.use("/api/v1/message", messageRouter);
 
 app.use(errorHandler);
 
