@@ -3,6 +3,7 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { Report } from "../models/report.model.js";
 import { Message } from "../models/message.model.js";
+import { getIO } from "../utils/socket.js";
 
 //Message Controller
 
@@ -26,6 +27,9 @@ const sendMessage = asyncHandler(async (req, res) => {
     fullName: req.user.fullName,
     content,
   });
+
+  const io = getIO();
+  io.to(reportId.toString()).emit("new_message", message);
 
   return res.status(201).json(new ApiResponse(201, message, "Message sent successfully"));
 });
