@@ -125,7 +125,112 @@ const registerUser = asyncHandler(async (req, res) => {
     const createdUser = await User.findById(user._id).select("-password -refreshToken -otp -otpExpiry");
 
     //send email to the user
-    await sendEmail({ to: email, subject: "OTP for verification", html: `<h1>Your OTP is ${otp}</h1>` });
+    await sendEmail({
+      to: email,
+      subject: "OTP for verification",
+      html: `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OTP Verification</title>
+  </head>
+
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f7;
+      font-family: Arial, sans-serif;
+    "
+  >
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      style="background-color: #f4f4f7; padding: 20px"
+    >
+      <tr>
+        <td align="center">
+          <table
+            width="100%"
+            max-width="500px"
+            cellpadding="0"
+            cellspacing="0"
+            style="
+              background-color: #ffffff;
+              border-radius: 10px;
+              padding: 30px;
+            "
+          >
+            <tr>
+              <td align="center" style="padding-bottom: 20px">
+                <h2 style="margin: 0; color: #111">GoodDeed Foundation</h2>
+                <p style="margin: 5px 0 0; color: #777; font-size: 14px">
+                  AI-Powered Platform Connecting Volunteers
+                </p>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="color: #333; font-size: 16px; line-height: 1.5">
+                <p>Hello,</p>
+                <p>
+                  Use the following One-Time Password (OTP) to complete your
+                  verification:
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding: 20px 0">
+                <div
+                  style="
+                    display: inline-block;
+                    padding: 15px 30px;
+                    font-size: 28px;
+                    letter-spacing: 5px;
+                    font-weight: bold;
+                    color: #ffffff;
+                    background-color: #4f46e5;
+                    border-radius: 8px;
+                  "
+                >
+                  ${otp}
+                </div>
+              </td>
+            </tr>
+
+            <!-- Info -->
+            <tr>
+              <td style="color: #555; font-size: 14px">
+                <p>This OTP is valid for <strong>5 minutes</strong>.</p>
+                <p>
+                  If you did not request this, you can safely ignore this email.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 20px 0">
+                <hr style="border: none; border-top: 1px solid #eee" />
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="font-size: 12px; color: #999">
+                <p style="margin: 0">
+                  © 2026 GoodDeed Foundation. All rights reserved.
+                </p>
+                <p style="margin: 5px 0 0">Need help? Contact support.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+`,
+    });
 
     return res
       .status(201)

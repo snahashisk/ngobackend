@@ -68,11 +68,15 @@ const createReport = asyncHandler(async (req, res) => {
     }
 
     //find all the users with same city
-    const cityVolunteers = await User.find({
+    const potentialVolunteers = await User.find({
       city: city,
       isVerified: true,
     });
-    console.log(cityVolunteers);
+
+    const nearByVolunteers = await User.find({
+      state: state,
+      isVerified: true,
+    });
 
     const report = await Report.create({
       reporterName,
@@ -93,57 +97,132 @@ const createReport = asyncHandler(async (req, res) => {
       stepsToResolve,
       reportedBy: req.user._id,
       status: "Pending",
+      potentialVolunteers: potentialVolunteers.map((v) => v._id),
     });
 
     res.status(201).json(new ApiResponse(201, report, "Report created successfully"));
 
     setImmediate(async () => {
       try {
-        const volunteers = await User.find({
-          isVerified: true,
-        });
-        if (!volunteers.length) {
+        if (!nearByVolunteers.length) {
           console.log("No volunteers found for notification");
           return;
         }
         await Promise.allSettled(
-          volunteers.map(async (v) => {
-            const token = jwt.sign(
-              {
-                userId: v._id,
-                reportId: report._id,
-              },
-              process.env.JWT_SECRET,
-              { expiresIn: "1h" },
-            );
-
-            const positiveLink = `${process.env.BASE_URL}/api/v1/report/vote?token=${token}&type=positive`;
-            const negativeLink = `${process.env.BASE_URL}/api/v1/report/vote?token=${token}&type=negative`;
-
+          nearByVolunteers.map(async (v) => {
             const html = `
-            <h2>🚨 New Crisis Report</h2>
-            <p><b>Title:</b> ${title}</p>
-            <p><b>Category:</b> ${category}</p>
-            <p><b>Description:</b> ${description}</p>
-            <p><b>Location:</b> ${city}, ${state}</p>
+            <!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
 
-            <br/>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background: #f4f6f8;
+      font-family: Arial, sans-serif;
+    "
+  >
+    <table width="100%" cellpadding="0" cellspacing="0" style="padding: 20px">
+      <tr>
+        <td align="center">
+          <table
+            width="100%"
+            style="
+              max-width: 600px;
+              background: #ffffff;
+              border-radius: 12px;
+              padding: 30px;
+            "
+          >
+            <tr>
+              <td align="center" style="padding-bottom: 20px">
+                <h2 style="margin: 0; color: #111">GoodDeed Foundation</h2>
+                <p style="margin: 5px 0 0; color: #666; font-size: 14px">
+                  AI-Powered Crisis Response Platform
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-bottom: 20px">
+                <h3 align="center" style="margin: 0; color: #dc2626">
+                  New Case Registered
+                </h3>
+                <p style="color: #555; font-size: 14px">
+                  A new case has been reported on the platform. Please log in to
+                  your dashboard to verify and take necessary action.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td
+                style="
+                  background: #f9fafb;
+                  padding: 20px;
+                  border-radius: 10px;
+                  font-size: 14px;
+                  color: #333;
+                  line-height: 1.6;
+                "
+              >
+                <p><b>Title:</b> ${title}</p>
+                <p><b>Category:</b> ${category}</p>
+                <p>
+                  <b>Description:</b><br />
+                  ${description}
+                </p>
+                <p>
+                  <b>Location:</b><br />
+                  ${landmark}, ${address}<br />
+                  ${locality}, ${city}, ${state}
+                </p>
 
-            <a href="${positiveLink}" 
-               style="padding:10px 20px;background:green;color:white;text-decoration:none;">
-               ✅ Verify
-            </a>
-
-            <a href="${negativeLink}" 
-               style="padding:10px 20px;background:red;color:white;text-decoration:none;margin-left:10px;">
-               ❌ Reject
-            </a>
-          `;
-
+                <p><b>Urgency Level:</b> ${urgencyLevel}</p>
+                <p><b>Affected People:</b> ${affectedPeople}</p>
+                <p>
+                  <b>Suggested Steps:</b><br />
+                  ${stepsToResolve}
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-top: 20px; font-size: 13px; color: #666">
+                <p>
+                  For security reasons, actions can only be performed after
+                  logging into the platform.
+                </p>
+                <p>
+                  If you did not expect this notification, you may ignore this
+                  email.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 20px 0">
+                <hr style="border: none; border-top: 1px solid #eee" />
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="font-size: 12px; color: #999">
+                <p style="margin: 0">© 2026 GoodDeed Foundation</p>
+                <p style="margin: 5px 0 0">
+                  Empowering communities through technology
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+`;
             return sendEmail({ to: v.email, subject: "New Crisis Report Verification", html: html });
           }),
         );
-        console.log(`Emails sent to ${volunteers.length} volunteers`);
+        console.log(`Emails sent to ${nearByVolunteers.length} volunteers`);
       } catch (error) {
         console.error("Send Email Error:", error);
       }
@@ -167,7 +246,7 @@ const getAllReports = asyncHandler(async (req, res) => {
 
 const getSixMostRecentReports = asyncHandler(async (req, res) => {
   try {
-    const reports = await Report.find().sort({ createdAt: -1 }).limit(6);
+    const reports = await Report.find().sort({ createdAt: -1 }).limit(9);
     return res.status(200).json(new ApiResponse(200, reports, "Reports fetched successfully"));
   } catch (error) {
     console.error("Get Six Most Recent Reports Error:", error);
@@ -264,10 +343,10 @@ const addVote = asyncHandler(async (req, res) => {
   }
 
   //check if the user has already voted
-  const alreadyVoted = report.verifiedBy.some((id) => id.toString() === user._id.toString());
-  if (alreadyVoted) {
-    throw new ApiError(400, "You have already voted for this report.");
-  }
+  // const alreadyVoted = report.verifiedBy.some((id) => id.toString() === user._id.toString());
+  // if (alreadyVoted) {
+  //   throw new ApiError(400, "You have already voted for this report.");
+  // }
 
   try {
     if (type === "positive") {
@@ -315,6 +394,28 @@ const joinReport = asyncHandler(async (req, res) => {
     }
     report.status = "InProgress";
     report.assignedMembers.push(user._id);
+    await report.save();
+    return res.status(200).json(new ApiResponse(200, report, "Report joined successfully."));
+  } catch (error) {
+    console.error("Failed to join report.", error);
+    throw new ApiError(500, error?.message || "Failed to join report");
+  }
+});
+
+const joinReportasCaptain = asyncHandler(async (req, res) => {
+  try {
+    const { reportId } = req.body;
+    const user = req.user;
+    const report = await Report.findById(reportId);
+    if (!report) {
+      throw new ApiError(404, "Report not found");
+    }
+    //add user to assigned members if he is not already assigned
+    if (report.assignedMembers.includes(user._id)) {
+      throw new ApiError(400, "You are already assigned to this report.");
+    }
+    report.status = "InProgress";
+    report.captain = user._id;
     await report.save();
     return res.status(200).json(new ApiResponse(200, report, "Report joined successfully."));
   } catch (error) {

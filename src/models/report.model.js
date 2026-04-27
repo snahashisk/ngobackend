@@ -132,6 +132,12 @@ const reportSchema = new Schema(
         ref: "User",
       },
     ],
+    potentialVolunteers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { timestamps: true },
 );
