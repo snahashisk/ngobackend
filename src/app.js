@@ -9,9 +9,12 @@ import { messageRouter } from "./routes/message.route.js";
 
 const app = express();
 
+const isDev = process.env.NODE_ENV !== "production";
+console.log(isDev);
+
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: isDev ? "http://localhost:3000" : process.env.CORS_ORIGIN,
     credentials: true,
   }),
 );

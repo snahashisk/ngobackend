@@ -2,10 +2,13 @@ import { Server } from "socket.io";
 
 let io;
 
+const isDev = process.env.NODE_ENV !== "production";
+console.log(isDev);
+
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: "http://localhost:3000",
+      origin: isDev ? "http://localhost:3000" : process.env.CORS_ORIGIN,
       credentials: true,
     },
   });
