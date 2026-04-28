@@ -14,7 +14,7 @@ console.log(isDev);
 
 app.use(
   cors({
-    origin: isDev ? "http://localhost:3000" : process.env.CORS_ORIGIN,
+    origin: "https://ngofrontend-opal.vercel.app",
     credentials: true,
   }),
 );
