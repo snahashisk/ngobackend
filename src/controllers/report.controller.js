@@ -343,10 +343,10 @@ const addVote = asyncHandler(async (req, res) => {
   }
 
   //check if the user has already voted
-  // const alreadyVoted = report.verifiedBy.some((id) => id.toString() === user._id.toString());
-  // if (alreadyVoted) {
-  //   throw new ApiError(400, "You have already voted for this report.");
-  // }
+  const alreadyVoted = report.verifiedBy.some((id) => id.toString() === user._id.toString());
+  if (alreadyVoted) {
+    throw new ApiError(400, "You have already voted for this report.");
+  }
 
   try {
     if (type === "positive") {
